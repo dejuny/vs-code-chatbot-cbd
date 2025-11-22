@@ -34,7 +34,9 @@ jobs:
 
       - name: Package extension
         working-directory: vscode-extension/frontend/ai-chatbot-extension
-        run: npx @vscode/vsce package --out ./dist/ai-chatbot-extension.vsix
+        run: |
+          mkdir -p dist
+          npx @vscode/vsce package --out dist/ai-chatbot-extension.vsix
 
       - name: Publish extension to Marketplace
         working-directory: vscode-extension/frontend/ai-chatbot-extension
