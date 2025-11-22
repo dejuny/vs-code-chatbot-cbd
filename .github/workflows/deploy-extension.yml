@@ -29,7 +29,7 @@ jobs:
         env:
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
         run: |
-          NEW_VERSION=$(node -p "const v = require('./package.json').version.split('.'); `${v[0]}.${v[1]}.${process.env.GITHUB_RUN_NUMBER}`")
+          NEW_VERSION=$(node -e "const run=process.env.GITHUB_RUN_NUMBER||'0';const v=require('./package.json').version.split('.');const next=\`\${v[0]||0}.\${v[1]||0}.\${run}\`;console.log(next);")
           echo "Setting VSIX version to ${NEW_VERSION}"
           npm version --no-git-tag-version "$NEW_VERSION"
 
