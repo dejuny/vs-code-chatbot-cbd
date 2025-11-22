@@ -24,6 +24,15 @@ jobs:
           cache-dependency-path: |
             vscode-extension/frontend/ai-chatbot-extension/package-lock.json
 
+      - name: Bump extension version for this run
+        working-directory: vscode-extension/frontend/ai-chatbot-extension
+        env:
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          NEW_VERSION=$(node -p "const v = require('./package.json').version.split('.'); `${v[0]}.${v[1]}.${process.env.GITHUB_RUN_NUMBER}`")
+          echo "Setting VSIX version to ${NEW_VERSION}"
+          npm version --no-git-tag-version "$NEW_VERSION"
+
       - name: Install dependencies
         working-directory: vscode-extension/frontend/ai-chatbot-extension
         run: npm ci
