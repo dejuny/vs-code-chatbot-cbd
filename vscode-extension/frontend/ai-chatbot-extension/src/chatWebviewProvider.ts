@@ -502,8 +502,80 @@ export class ChatWebviewProvider implements vscode.Disposable {
                 }
                 
                 .message-text {
-                    line-height: 1.4;
+                    line-height: 1.6;
                     word-wrap: break-word;
+                    white-space: normal;
+                }
+                
+                .markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4, .markdown-body h5, .markdown-body h6 {
+                    margin: 8px 0 6px;
+                    font-weight: 600;
+                }
+
+                .markdown-body h1 { font-size: 20px; }
+                .markdown-body h2 { font-size: 18px; }
+                .markdown-body h3 { font-size: 16px; }
+                .markdown-body h4 { font-size: 14px; }
+                .markdown-body h5 { font-size: 13px; }
+                .markdown-body h6 { font-size: 12px; color: var(--vscode-descriptionForeground); }
+
+                .markdown-body p {
+                    margin: 0 0 10px;
+                    line-height: 1.6;
+                }
+
+                .markdown-body ul, .markdown-body ol {
+                    padding-left: 18px;
+                    margin: 6px 0 10px;
+                    line-height: 1.5;
+                }
+
+                .markdown-body li {
+                    margin: 4px 0;
+                }
+
+                .markdown-body blockquote {
+                    margin: 0 0 10px;
+                    padding-left: 10px;
+                    border-left: 3px solid var(--vscode-panel-border);
+                    color: var(--vscode-descriptionForeground);
+                }
+
+                .markdown-body code {
+                    background-color: var(--vscode-editorWidget-background);
+                    border: 1px solid var(--vscode-panel-border);
+                    padding: 2px 4px;
+                    border-radius: 4px;
+                    font-family: var(--vscode-editor-font-family);
+                    font-size: 12px;
+                }
+
+                .markdown-body pre {
+                    background-color: var(--vscode-editorWidget-background);
+                    border: 1px solid var(--vscode-panel-border);
+                    padding: 10px;
+                    border-radius: 6px;
+                    overflow-x: auto;
+                    font-family: var(--vscode-editor-font-family);
+                    font-size: 12px;
+                    line-height: 1.5;
+                    margin: 0 0 12px;
+                }
+
+                .markdown-body hr {
+                    border: none;
+                    border-top: 1px solid var(--vscode-panel-border);
+                    margin: 12px 0;
+                }
+
+                .markdown-body a {
+                    color: var(--vscode-textLink-foreground);
+                    text-decoration: underline;
+                }
+
+                .markdown-body a:hover {
+                    color: var(--vscode-textLink-activeForeground);
+                    text-decoration: none;
                 }
                 
                 .message-line {
@@ -653,7 +725,7 @@ export class ChatWebviewProvider implements vscode.Disposable {
                 <div class="message">
                     <div class="message-avatar">🤖</div>
                     <div class="message-content">
-                        <div class="message-text">Hello! I'm your AI coding assistant. I have full awareness of your repository and can help you with code generation, explanations, and refactoring. What would you like to work on?</div>
+                        <div class="message-text markdown-body">Hello! I'm your AI coding assistant. I have full awareness of your repository and can help you with code generation, explanations, and refactoring. What would you like to work on?</div>
                     </div>
                 </div>
             </div>
