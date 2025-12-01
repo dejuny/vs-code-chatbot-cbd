@@ -39,6 +39,16 @@
         return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
+    function isDirectoryLike(pathValue) {
+        if (!pathValue) {
+            return false;
+        }
+        const parts = pathValue.split('/').filter(Boolean);
+        const last = parts.length > 0 ? parts[parts.length - 1] : pathValue;
+        // Heuristic: no extension and no explicit line number => directory-ish
+        return !last.includes('.') && !/:/.test(last);
+    }
+
     /**
      * Minimal Markdown to HTML renderer with file-link awareness.
      * Covers headings, bold/italic, code fences, inline code, lists, and links.
@@ -152,7 +162,12 @@
             contentDiv.querySelectorAll('.file-link').forEach((el) => {
                 const fileAttr = el.getAttribute('data-file') || '';
                 const lineAttr = parseLineNumber(el.getAttribute('data-line'));
-                el.addEventListener('click', () => openFile(fileAttr, lineAttr));
+                el.addEventListener('click', () => {
+                    if (isDirectoryLike(fileAttr)) {
+                        return;
+                    }
+                    openFile(fileAttr, lineAttr);
+                });
             });
         } else {
             const textDiv = document.createElement('div');
