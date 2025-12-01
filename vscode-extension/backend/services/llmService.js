@@ -1,5 +1,7 @@
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
+const CONTEXT_CHAR_LIMIT_PER_FILE = 8000;
+
 /**
  * LLM Service for AI Code Assistant Backend
  *
@@ -61,7 +63,7 @@ class LLMService {
         }
 
         // Prepare context from files
-        const fileContext = this.prepareFileContext(files);
+        const fileContext = this.prepareFileContext(files, currentFile);
         const directoryTree = this.generateDirectoryTree(files);
         const formattedTree = this.formatDirectoryTree(directoryTree);
 
@@ -113,16 +115,23 @@ Please analyze the provided codebase and respond to the user's question. Include
     /**
      * Prepare file context for LLM
      * @param {Array} files - Array of files with content
+     * @param {string|null} currentFile - Currently active file path
      * @returns {string} Formatted file context
      */
-    prepareFileContext(files) {
-        return files.map(file => {
-            const content = file.content || '';
-            const lines = content.split('\n');
-            const preview = lines.slice(0, 10).join('\n'); // First 10 lines
+    prepareFileContext(files, currentFile = null) {
+        // Prefer the current file first, then keep the rest in order
+        const orderedFiles = currentFile
+            ? [...files].sort((a, b) => (a?.filename === currentFile ? -1 : b?.filename === currentFile ? 1 : 0))
+            : files;
 
-            return `File: ${file.filename}
-${preview}${lines.length > 10 ? '\n...' : ''}
+        return orderedFiles.map(file => {
+            const content = file.content || '';
+            const isTruncated = content.length > CONTEXT_CHAR_LIMIT_PER_FILE;
+            const preview = content.slice(0, CONTEXT_CHAR_LIMIT_PER_FILE);
+            const header = `File: ${file.filename}${file.filename === currentFile ? ' [CURRENT FILE]' : ''}`;
+
+            return `${header}
+${preview}${isTruncated ? '\n...(truncated)' : ''}
 ---`;
         }).join('\n\n');
     }
@@ -159,7 +168,6 @@ ${preview}${lines.length > 10 ? '\n...' : ''}
                         size: content.length,
                         extension: part.split('.').pop() || 'unknown',
                         preview: firstThreeLines,
-                        fullContent: content,
                     };
                 } else {
                     // This is a directory

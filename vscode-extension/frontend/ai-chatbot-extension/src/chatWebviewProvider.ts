@@ -216,7 +216,7 @@ export class ChatWebviewProvider implements vscode.Disposable {
             // Show loading state
             this._sendMessageToWebview({
                 type: MESSAGE_TYPES.AI_RESPONSE,
-                payload: { response: '🤖 Analyzing your codebase... Please wait.' },
+                payload: { response: '🤖 Working on your request... Please wait.' },
             });
 
             // Get workspace context with file contents
@@ -294,11 +294,12 @@ export class ChatWebviewProvider implements vscode.Disposable {
         const backendUrl = vscode.workspace
             .getConfiguration('ai-chatbot')
             .get<string>('backendUrl', CONFIG.DEFAULT_BACKEND_URL);
+        const currentFile = this._getCurrentFile();
 
         console.log(`[AI Chatbot] Calling backend API at ${backendUrl}`);
         console.log(`[AI Chatbot] Sending ${files.length} files with prompt: "${prompt}"`);
 
-        return callBackendAPI(prompt, files, backendUrl);
+        return callBackendAPI(prompt, files, backendUrl, currentFile);
     }
 
     /**

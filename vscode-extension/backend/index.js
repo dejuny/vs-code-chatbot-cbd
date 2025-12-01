@@ -40,7 +40,7 @@ app.get('/health', (req, res) => {
 // Main upload endpoint
 app.post('/upload', async (req, res) => {
     try {
-        const { files, prompt } = req.body;
+        const { files, prompt, currentFile } = req.body;
 
         // Validate request
         if (!files || !Array.isArray(files)) {
@@ -55,10 +55,19 @@ app.post('/upload', async (req, res) => {
             });
         }
 
+        if (currentFile && typeof currentFile !== 'string') {
+            return res.status(400).json({
+                error: 'Invalid request: currentFile must be a string when provided',
+            });
+        }
+
         // Log incoming request details
         console.log('\n=== NEW UPLOAD REQUEST ===');
         console.log(`Prompt: "${prompt}"`);
         console.log(`Files received: ${files.length}`);
+        if (currentFile) {
+            console.log(`Current file: ${currentFile}`);
+        }
 
         // Log file details
         files.forEach((file, index) => {
@@ -71,7 +80,7 @@ app.post('/upload', async (req, res) => {
         const directoryTree = llmService.generateDirectoryTree(files);
 
         // Generate AI response using LLM service (Gemini)
-        const aiResponse = await llmService.generateResponse(prompt, files, null);
+        const aiResponse = await llmService.generateResponse(prompt, files, currentFile || null);
 
         // Prepare response
         const response = {

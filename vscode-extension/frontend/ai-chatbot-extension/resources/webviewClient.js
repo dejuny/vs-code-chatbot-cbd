@@ -23,6 +23,84 @@
         currentFile: 'No file selected',
     };
 
+    const htmlEscapes = Object.freeze({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        '\'': '&#39;',
+    });
+
+    function escapeHtml(str) {
+        return String(str).replace(/[&<>"']/g, (ch) => htmlEscapes[ch] || ch);
+    }
+
+    function escapeAttr(str) {
+        return String(str).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    /**
+     * Minimal Markdown to HTML renderer with file-link awareness.
+     * Covers headings, bold/italic, code fences, inline code, lists, and links.
+     * All input is HTML-escaped before formatting to avoid injection.
+     */
+    function renderMarkdown(text) {
+        if (!text) {
+            return '';
+        }
+
+        let html = escapeHtml(text);
+
+        // Code fences
+        html = html.replace(/```([\s\S]*?)```/g, (_match, code) =>
+            `<pre><code>${code}</code></pre>`,
+        );
+
+        // Headings (h1-h6)
+        for (let level = 6; level >= 1; level -= 1) {
+            const pattern = new RegExp(`^${'#'.repeat(level)}\\s+(.+)$`, 'gm');
+            html = html.replace(pattern, (_m, content) => `<h${level}>${content}</h${level}>`);
+        }
+
+        // Bold then italics (avoid double-processing)
+        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/(^|[^\*])\*(?!\*)(.+?)\*(?!\*)/g, (_m, prefix, content) => `${prefix}<em>${content}</em>`);
+
+        // Inline code
+        html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+        // Links: treat path:line as file-link, otherwise external link
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label, target) => {
+            const fileMatch = target.match(/^([^:()]+):(\d+)$/);
+            if (fileMatch) {
+                const file = escapeAttr(fileMatch[1]);
+                const line = escapeAttr(fileMatch[2]);
+                return `<span class="file-link" data-file="${file}" data-line="${line}">${escapeHtml(label)}</span>`;
+            }
+
+            const hasProtocol = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(target);
+            const href = escapeAttr(target);
+            if (hasProtocol) {
+                return `<a href="${href}" target="_blank" rel="noreferrer noopener">${escapeHtml(label)}</a>`;
+            }
+            return `<span class="file-link" data-file="${href}">${escapeHtml(label)}</span>`;
+        });
+
+        // Lists
+        html = html.replace(/(^|\n)([-*])\s+([^\n]+)/g, (_m, prefix, _bullet, item) => `${prefix}<li>${item}</li>`);
+        html = html.replace(/((?:<li>[\s\S]*?<\/li>\s*)+)/g, '<ul>$1</ul>');
+
+        // Paragraphs: split on double newlines
+        html = html.split(/\n{2,}/).map(block => {
+            if (block.trim().startsWith('<ul>') || block.trim().startsWith('<pre>') || block.trim().match(/^<h[1-6]>/)) {
+                return block;
+            }
+            return `<p>${block.replace(/\n/g, '<br>')}</p>`;
+        }).join('');
+
+        return html;
+    }
+
     function postMessage(type, payload = {}) {
         vscode.postMessage({type, payload});
     }
@@ -70,11 +148,16 @@
 
         if (type === 'ai') {
             messageDiv.setAttribute('data-raw-content', content);
-            parseContentWithCitations(content).forEach((line) => contentDiv.appendChild(line));
+            contentDiv.innerHTML = renderMarkdown(content);
+            contentDiv.querySelectorAll('.file-link').forEach((el) => {
+                const fileAttr = el.getAttribute('data-file') || '';
+                const lineAttr = parseLineNumber(el.getAttribute('data-line'));
+                el.addEventListener('click', () => openFile(fileAttr, lineAttr));
+            });
         } else {
             const textDiv = document.createElement('div');
             textDiv.className = 'message-text';
-            textDiv.innerHTML = parseContent(content);
+            textDiv.innerHTML = renderMarkdown(content);
             contentDiv.appendChild(textDiv);
         }
 
@@ -86,81 +169,6 @@
         if (saveHistory) {
             window.setTimeout(saveChatHistory, SAVE_DELAY_MS);
         }
-    }
-
-    function parseContent(text) {
-        const linkRegex = /\[([^\]]+)\]\(([^:)]+):?(\d+)?\)/g;
-        return text.replace(linkRegex, (_match, linkText, fileName, lineNumber) => {
-            return `<span class="file-link" data-file="${fileName}" data-line="${lineNumber || ''}">${linkText}</span>`;
-        });
-    }
-
-    function parseContentWithCitations(text) {
-        const lines = text.split('\n');
-        const result = [];
-        const linkRegex = /\[([^\]]+)\]\(([^:)]+):?(\d+)?\)/g;
-
-        lines.forEach((line) => {
-            const lineReferences = [];
-            let match;
-            let lastIndex = 0;
-            let lineContent = '';
-
-            while ((match = linkRegex.exec(line)) !== null) {
-                if (match.index > lastIndex) {
-                    lineContent += line.slice(lastIndex, match.index);
-                }
-
-                const linkText = match[1];
-                const fileName = match[2];
-                const lineNumber = match[3];
-
-                lineContent += `<span class="file-link" data-file="${fileName}" data-line="${lineNumber || ''}">${linkText}</span>`;
-
-                if (lineNumber) {
-                    lineReferences.push({fileName, lineNumber});
-                }
-
-                lastIndex = match.index + match[0].length;
-            }
-
-            if (lastIndex < line.length) {
-                lineContent += line.slice(lastIndex);
-            }
-
-            const lineDiv = document.createElement('div');
-            lineDiv.className = 'message-line';
-
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'line-content';
-            contentDiv.innerHTML = lineContent || line;
-            contentDiv.querySelectorAll('.file-link').forEach((el) => {
-                const fileAttr = el.getAttribute('data-file') || '';
-                const lineAttr = parseLineNumber(el.getAttribute('data-line'));
-                el.addEventListener('click', () => openFile(fileAttr, lineAttr));
-            });
-
-            lineDiv.appendChild(contentDiv);
-
-            if (lineReferences.length > 0) {
-                const citationsDiv = document.createElement('div');
-                citationsDiv.className = 'line-citations';
-
-                lineReferences.forEach((ref) => {
-                    const citationBtn = document.createElement('button');
-                    citationBtn.className = 'file-reference';
-                    citationBtn.textContent = `📄 ${ref.fileName}:${ref.lineNumber}`;
-                    citationBtn.addEventListener('click', () => openFile(ref.fileName, parseLineNumber(ref.lineNumber)));
-                    citationsDiv.appendChild(citationBtn);
-                });
-
-                lineDiv.appendChild(citationsDiv);
-            }
-
-            result.push(lineDiv);
-        });
-
-        return result;
     }
 
     function openFile(fileName, lineNumber) {

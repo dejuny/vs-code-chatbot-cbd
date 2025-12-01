@@ -118,16 +118,14 @@ describe('LLMService', () => {
             expect(result.split('\n\n').length).toBeGreaterThan(1);
         });
 
-        test('3.3: limits preview to 10 lines', () => {
-            const content = Array(15).fill(0).map((_, i) => `line${i + 1}`).join('\n');
+        test('3.3: truncates long content with indicator', () => {
+            const content = 'a'.repeat(8500);
             const files = [{ filename: 'test.js', content }];
 
             const result = service.prepareFileContext(files);
 
-            expect(result).toContain('line1');
-            expect(result).toContain('line10');
-            expect(result).toContain('...');
-            expect(result).not.toContain('line15');
+            expect(result).toContain('...(truncated)');
+            expect(result.length).toBeLessThan(content.length);
         });
 
         test('3.4: handles empty file content', () => {
@@ -190,7 +188,7 @@ describe('LLMService', () => {
             expect(tree['test.js']).toHaveProperty('size', 5);
             expect(tree['test.js']).toHaveProperty('extension', 'js');
             expect(tree['test.js']).toHaveProperty('preview');
-            expect(tree['test.js']).toHaveProperty('fullContent', 'hello');
+            expect(tree['test.js'].fullContent).toBeUndefined();
         });
 
         test('4.4: extracts up to 3 trimmed non-empty lines for preview', () => {
@@ -589,4 +587,3 @@ describe('LLMService', () => {
         });
     });
 });
-
