@@ -542,7 +542,7 @@ describe('ChatWebviewProvider', () => {
             const postedMessages = harness.panelStub.webview.postMessage.getCalls().map((call: sinon.SinonSpyCall<any[], any>) => call.args[0]);
             expect(postedMessages[0]).to.deep.equal({
                 type: MESSAGE_TYPES.AI_RESPONSE,
-                payload: { response: '🤖 Analyzing your codebase... Please wait.' },
+                payload: { response: '🤖 Processing your request... pulling workspace context.' },
             });
             expect(postedMessages[1]).to.deep.equal({
                 type: MESSAGE_TYPES.AI_RESPONSE,
@@ -562,7 +562,7 @@ describe('ChatWebviewProvider', () => {
             const postedMessages = harness.panelStub.webview.postMessage.getCalls().map((call: sinon.SinonSpyCall<any[], any>) => call.args[0]);
             expect(postedMessages[0]).to.deep.equal({
                 type: MESSAGE_TYPES.AI_RESPONSE,
-                payload: { response: '🤖 Analyzing your codebase... Please wait.' },
+                payload: { response: '🤖 Processing your request... pulling workspace context.' },
             });
             expect(postedMessages[1].type).to.equal(MESSAGE_TYPES.AI_RESPONSE);
             expect(postedMessages[1].payload.response).to.contain('Failed to contact the Gemini backend');
