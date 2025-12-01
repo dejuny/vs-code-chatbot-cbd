@@ -216,7 +216,7 @@ export class ChatWebviewProvider implements vscode.Disposable {
             // Show loading state
             this._sendMessageToWebview({
                 type: MESSAGE_TYPES.AI_RESPONSE,
-                payload: { response: '🤖 Analyzing your codebase... Please wait.' },
+                payload: { response: '🤖 Processing your request... pulling workspace context.' },
             });
 
             // Get workspace context with file contents

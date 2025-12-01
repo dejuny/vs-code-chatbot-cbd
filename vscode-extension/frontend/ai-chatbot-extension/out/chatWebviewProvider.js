@@ -194,7 +194,7 @@ class ChatWebviewProvider {
             // Show loading state
             this._sendMessageToWebview({
                 type: types_1.MESSAGE_TYPES.AI_RESPONSE,
-                payload: { response: '🤖 Analyzing your codebase... Please wait.' },
+                payload: { response: '🤖 Processing your request... pulling workspace context.' },
             });
             // Get workspace context with file contents
             const workspaceFiles = await this._getWorkspaceFilesWithContent();
